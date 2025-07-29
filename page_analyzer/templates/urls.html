@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Сайты - Анализатор страниц{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-10 col-lg-8 mx-auto">
+        <h1 class="h3">Сайты</h1>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>URL</th>
+                        <th>Код ответа</th>
+                        <th>Последняя проверка</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Здесь будет список сайтов -->
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            Пока нет добавленных сайтов
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 
