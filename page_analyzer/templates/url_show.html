@@ -33,7 +33,7 @@
         
         {% if checks %}
         <div class="mt-4">
-            <h2 class="h4">Проверки</h2>
+            <h2 class="h4">Проверки ({{ checks|length }})</h2>
             <div class="table-responsive">
                 <table class="table table-striped" data-test="checks">
                     <thead>
@@ -60,6 +60,10 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+        {% else %}
+        <div class="mt-4">
+            <p class="text-muted">Проверок пока нет</p>
         </div>
         {% endif %}
     </div>

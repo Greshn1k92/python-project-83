@@ -91,7 +91,8 @@ def add_check(url_id):
     check_id = _next_check_id
     _next_check_id += 1
 
-    _checks_storage.append((check_id, url_id, None, None, None, None, datetime.now(timezone.utc)))
+    check_data = (check_id, url_id, None, None, None, None, datetime.now(timezone.utc))
+    _checks_storage.append(check_data)
     return check_id
 
 
