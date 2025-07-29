@@ -24,6 +24,44 @@
                 </tbody>
             </table>
         </div>
+        
+        <div class="mt-4">
+            <form action="{{ url_for('url_checks', url_id=url[0]) }}" method="post">
+                <button type="submit" class="btn btn-primary">Запустить проверку</button>
+            </form>
+        </div>
+        
+        {% if checks %}
+        <div class="mt-4">
+            <h2 class="h4">Проверки</h2>
+            <div class="table-responsive">
+                <table class="table table-striped" data-test="checks">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Код ответа</th>
+                            <th>h1</th>
+                            <th>title</th>
+                            <th>description</th>
+                            <th>Дата создания</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for check in checks %}
+                        <tr>
+                            <td>{{ check[0] }}</td>
+                            <td>{{ check[2] or '-' }}</td>
+                            <td>{{ check[3] or '-' }}</td>
+                            <td>{{ check[4] or '-' }}</td>
+                            <td>{{ check[5] or '-' }}</td>
+                            <td>{{ check[6].strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %} 

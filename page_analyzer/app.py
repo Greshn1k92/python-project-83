@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
-from .database import add_url, get_all_urls, get_url_by_id, get_url_by_name, validate_url
+from .database import add_url, get_all_urls, get_url_by_id, get_url_by_name, validate_url, add_check, get_checks_by_url_id
 
 load_dotenv()
 
@@ -53,7 +53,23 @@ def url_show(url_id):
     if not url_data:
         abort(404)
 
-    return render_template("url_show.html", url=url_data)
+    checks = get_checks_by_url_id(url_id)
+    return render_template("url_show.html", url=url_data, checks=checks)
+
+
+@app.route("/urls/<int:url_id>/checks", methods=["POST"])
+def url_checks(url_id):
+    url_data = get_url_by_id(url_id)
+    if not url_data:
+        abort(404)
+
+    check_id = add_check(url_id)
+    if check_id:
+        flash("Страница успешно проверена", "success")
+    else:
+        flash("Произошла ошибка при проверке", "error")
+
+    return redirect(url_for("url_show", url_id=url_id))
 
 
 if __name__ == "__main__":

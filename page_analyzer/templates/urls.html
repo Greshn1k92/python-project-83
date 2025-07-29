@@ -12,7 +12,8 @@
                     <tr>
                         <th>ID</th>
                         <th>URL</th>
-                        <th>Дата создания</th>
+                        <th>Последняя проверка</th>
+                        <th>Код ответа</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -20,13 +21,14 @@
                         {% for url in urls %}
                         <tr>
                             <td>{{ url[0] }}</td>
-                            <td><a href="{{ url_for('url_show', id=url[0]) }}">{{ url[1] }}</a></td>
-                            <td>{{ url[2].strftime('%Y-%m-%d') }}</td>
+                            <td><a href="{{ url_for('url_show', url_id=url[0]) }}">{{ url[1] }}</a></td>
+                            <td>{{ url[3][6].strftime('%Y-%m-%d') if url[3] else '-' }}</td>
+                            <td>{{ url[3][2] if url[3] else '-' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="3" class="text-center text-muted">
+                            <td colspan="4" class="text-center text-muted">
                                 Пока нет добавленных сайтов
                             </td>
                         </tr>

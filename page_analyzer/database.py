@@ -8,7 +8,9 @@ load_dotenv()
 
 # Временное хранилище для демонстрации (в продакшене будет PostgreSQL)
 _urls_storage = []
+_checks_storage = []
 _next_id = 1
+_next_check_id = 1
 
 
 def validate_url(url):
@@ -60,8 +62,12 @@ def get_url_by_id(url_id):
 
 
 def get_all_urls():
-    """Получение всех URL, отсортированных по дате создания (новые первые)"""
-    return sorted(_urls_storage, key=lambda x: x[2], reverse=True)
+    """Получение всех URL с информацией о последней проверке"""
+    urls_with_checks = []
+    for url_data in _urls_storage:
+        last_check = get_last_check_by_url_id(url_data[0])
+        urls_with_checks.append((url_data[0], url_data[1], url_data[2], last_check))
+    return sorted(urls_with_checks, key=lambda x: x[2], reverse=True)
 
 
 def get_url_by_name(name):
@@ -70,3 +76,35 @@ def get_url_by_name(name):
         if url_data[1] == name:
             return url_data
     return None
+
+
+def add_check(url_id):
+    """Добавление проверки для URL"""
+    global _next_check_id
+    
+    # Проверяем, что URL существует
+    url_exists = any(url_data[0] == url_id for url_data in _urls_storage)
+    if not url_exists:
+        return None
+    
+    # Добавляем новую проверку
+    check_id = _next_check_id
+    _next_check_id += 1
+    
+    _checks_storage.append((check_id, url_id, None, None, None, None, datetime.now(timezone.utc)))
+    return check_id
+
+
+def get_checks_by_url_id(url_id):
+    """Получение всех проверок для URL"""
+    checks = []
+    for check_data in _checks_storage:
+        if check_data[1] == url_id:
+            checks.append(check_data)
+    return sorted(checks, key=lambda x: x[6], reverse=True)  # Сортировка по дате создания
+
+
+def get_last_check_by_url_id(url_id):
+    """Получение последней проверки для URL"""
+    checks = get_checks_by_url_id(url_id)
+    return checks[0] if checks else None
