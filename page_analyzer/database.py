@@ -81,26 +81,23 @@ def get_url_by_name(name):
 def add_check(url_id):
     """Добавление проверки для URL"""
     global _next_check_id
-    
+
     # Проверяем, что URL существует
     url_exists = any(url_data[0] == url_id for url_data in _urls_storage)
     if not url_exists:
         return None
-    
+
     # Добавляем новую проверку
     check_id = _next_check_id
     _next_check_id += 1
-    
+
     _checks_storage.append((check_id, url_id, None, None, None, None, datetime.now(timezone.utc)))
     return check_id
 
 
 def get_checks_by_url_id(url_id):
     """Получение всех проверок для URL"""
-    checks = []
-    for check_data in _checks_storage:
-        if check_data[1] == url_id:
-            checks.append(check_data)
+    checks = [check_data for check_data in _checks_storage if check_data[1] == url_id]
     return sorted(checks, key=lambda x: x[6], reverse=True)  # Сортировка по дате создания
 
 

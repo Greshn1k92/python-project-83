@@ -3,7 +3,15 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
-from .database import add_url, get_all_urls, get_url_by_id, get_url_by_name, validate_url, add_check, get_checks_by_url_id
+from .database import (
+    add_check,
+    add_url,
+    get_all_urls,
+    get_checks_by_url_id,
+    get_url_by_id,
+    get_url_by_name,
+    validate_url,
+)
 
 load_dotenv()
 
