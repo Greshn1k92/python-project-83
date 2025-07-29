@@ -73,7 +73,7 @@ def url_checks(url_id):
 
     check_id = add_check(url_id)
     if check_id:
-        flash("Страница успешно проверена", "success")
+        flash(f"Страница успешно проверена (ID проверки: {check_id})", "success")
     else:
         flash("Произошла ошибка при проверке", "error")
 
