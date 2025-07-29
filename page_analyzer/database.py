@@ -99,8 +99,7 @@ def add_check(url_id):
 def get_checks_by_url_id(url_id):
     """Получение всех проверок для URL"""
     checks = [check_data for check_data in _checks_storage if check_data[1] == url_id]
-    sorted_checks = sorted(checks, key=lambda x: x[6], reverse=True)  # Сортировка по дате создания
-    return sorted_checks
+    return sorted(checks, key=lambda x: x[6], reverse=True)  # Сортировка по дате создания
 
 
 def get_last_check_by_url_id(url_id):
