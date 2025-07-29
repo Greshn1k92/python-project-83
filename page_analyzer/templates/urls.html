@@ -7,22 +7,30 @@
     <div class="col-12 col-md-10 col-lg-8 mx-auto">
         <h1 class="h3">Сайты</h1>
         <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-striped" data-test="urls">
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>URL</th>
-                        <th>Код ответа</th>
-                        <th>Последняя проверка</th>
+                        <th>Дата создания</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Здесь будет список сайтов -->
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">
-                            Пока нет добавленных сайтов
-                        </td>
-                    </tr>
+                    {% if urls %}
+                        {% for url in urls %}
+                        <tr>
+                            <td>{{ url[0] }}</td>
+                            <td><a href="{{ url_for('url_show', id=url[0]) }}">{{ url[1] }}</a></td>
+                            <td>{{ url[2].strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">
+                                Пока нет добавленных сайтов
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>

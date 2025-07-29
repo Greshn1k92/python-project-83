@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}URL - Анализатор страниц{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-10 col-lg-8 mx-auto">
+        <h1 class="h3">Сайт: {{ url[1] }}</h1>
+        <div class="table-responsive">
+            <table class="table table-striped" data-test="url">
+                <tbody>
+                    <tr>
+                        <td>ID</td>
+                        <td>{{ url[0] }}</td>
+                    </tr>
+                    <tr>
+                        <td>Имя</td>
+                        <td>{{ url[1] }}</td>
+                    </tr>
+                    <tr>
+                        <td>Дата создания</td>
+                        <td>{{ url[2].strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 
