@@ -1,17 +1,13 @@
-import psycopg2
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-import validators
+import re
 
 load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL')
-
-
-def get_db_connection():
-    """Получение соединения с базой данных"""
-    return psycopg2.connect(DATABASE_URL)
+# Временное хранилище для демонстрации (в продакшене будет PostgreSQL)
+_urls_storage = []
+_next_id = 1
 
 
 def validate_url(url):
@@ -22,7 +18,16 @@ def validate_url(url):
     if len(url) > 255:
         return False, "URL превышает 255 символов"
     
-    if not validators.url(url):
+    # Простая валидация URL
+    url_pattern = re.compile(
+        r'^https?://'  # http:// или https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # домен
+        r'localhost|'  # localhost
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # IP
+        r'(?::\d+)?'  # порт
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    
+    if not url_pattern.match(url):
         return False, "Некорректный URL"
     
     return True, ""
@@ -30,51 +35,38 @@ def validate_url(url):
 
 def add_url(url):
     """Добавление URL в базу данных"""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO urls (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id",
-                (url,)
-            )
-            result = cur.fetchone()
-            conn.commit()
-            return result[0] if result else None
-    except Exception as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
+    global _next_id
+    
+    # Проверяем, существует ли URL
+    for existing_url in _urls_storage:
+        if existing_url[1] == url:
+            return existing_url[0]
+    
+    # Добавляем новый URL
+    from datetime import datetime
+    url_id = _next_id
+    _next_id += 1
+    
+    _urls_storage.append((url_id, url, datetime.now()))
+    return url_id
 
 
 def get_url_by_id(url_id):
     """Получение URL по ID"""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (url_id,))
-            return cur.fetchone()
-    finally:
-        conn.close()
+    for url_data in _urls_storage:
+        if url_data[0] == url_id:
+            return url_data
+    return None
 
 
 def get_all_urls():
     """Получение всех URL, отсортированных по дате создания (новые первые)"""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, name, created_at FROM urls ORDER BY created_at DESC")
-            return cur.fetchall()
-    finally:
-        conn.close()
+    return sorted(_urls_storage, key=lambda x: x[2], reverse=True)
 
 
 def get_url_by_name(name):
     """Получение URL по имени"""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, name, created_at FROM urls WHERE name = %s", (name,))
-            return cur.fetchone()
-    finally:
-        conn.close() 
+    for url_data in _urls_storage:
+        if url_data[1] == name:
+            return url_data
+    return None 
