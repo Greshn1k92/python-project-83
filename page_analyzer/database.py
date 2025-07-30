@@ -1,12 +1,12 @@
 import os
 import re
 import sqlite3
+from urllib.parse import urlparse, urlunparse
 
 import psycopg2
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from urllib.parse import urlparse, urlunparse
 
 load_dotenv()
 
