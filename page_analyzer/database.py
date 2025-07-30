@@ -6,6 +6,7 @@ import psycopg2
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from urllib.parse import urlparse, urlunparse
 
 load_dotenv()
 
@@ -83,11 +84,10 @@ def init_db():
 
 
 def normalize_url(url):
-    """Normalize URL"""
-    # Убираем все trailing slashes
-    while url.endswith("/"):
-        url = url[:-1]
-    return url
+    """Normalize URL to scheme + netloc (ignore path, params, query, fragment)"""
+    parsed = urlparse(url)
+    normalized = urlunparse((parsed.scheme, parsed.netloc, '', '', '', ''))
+    return normalized
 
 
 def validate_url(url):
