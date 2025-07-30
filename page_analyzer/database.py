@@ -10,8 +10,14 @@ load_dotenv()
 
 def get_connection():
     """Получение соединения с базой данных"""
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Если есть DATABASE_URL, используем его напрямую
+        return psycopg2.connect(database_url)
+
+    # Иначе используем отдельные переменные
     return psycopg2.connect(
-        host=os.getenv("DATABASE_URL", "localhost"),
+        host=os.getenv("DB_HOST", "localhost"),
         database=os.getenv("DB_NAME", "page_analyzer"),
         user=os.getenv("DB_USER", "postgres"),
         password=os.getenv("DB_PASSWORD", "postgres"),
