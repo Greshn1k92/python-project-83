@@ -65,7 +65,7 @@ def urls():
             flash("Страница успешно добавлена", "success")
             return redirect(url_for("url_show", url_id=url_id))
         except Exception as e:
-            app.logger.error(f"Error adding URL: {str(e)}")
+            app.logger.error(f"Error adding URL: {e!s}")
             flash("Произошла ошибка при добавлении URL", "error")
             return render_template("index.html", url=url), 422
 
@@ -96,7 +96,7 @@ def url_checks(url_id):
         else:
             flash("Произошла ошибка при проверке", "error")
     except Exception as e:
-        app.logger.error(f"Error adding check: {str(e)}")
+        app.logger.error(f"Error adding check: {e!s}")
         flash("Произошла ошибка при проверке", "error")
 
     return redirect(url_for("url_show", url_id=url_id))
