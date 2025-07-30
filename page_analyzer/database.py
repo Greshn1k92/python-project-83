@@ -84,7 +84,7 @@ def init_db():
 
 
 def normalize_url(url):
-    """Normalize URL to scheme + netloc 
+    """Normalize URL to scheme + netloc
     (ignore path, params, query, fragment)
     """
     parsed = urlparse(url)
