@@ -33,7 +33,7 @@ jobs:
         uv run pytest
     
     - name: SonarQube Scan
-      uses: SonarSource/sonarqube-quality-gate-action@master
+      uses: SonarSource/sonarqube-scan-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -42,4 +42,13 @@ jobs:
           -Dsonar.organization=your-organization
           -Dsonar.projectKey=python-project-83
           -Dsonar.sources=page_analyzer
-          -Dsonar.python.version=3.11 
+          -Dsonar.python.version=3.11
+    
+    - name: SonarQube Quality Gate Check
+      uses: SonarSource/sonarqube-quality-gate-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        scanMetadataReportFile: .scannerwork/report-task.txt
+        pollingTimeoutSec: 300 
