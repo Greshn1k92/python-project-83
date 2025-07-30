@@ -84,8 +84,8 @@ def init_db():
 
 def normalize_url(url):
     """Normalize URL"""
-    # Убираем trailing slash
-    if url.endswith("/"):
+    # Убираем все trailing slashes
+    while url.endswith("/"):
         url = url[:-1]
     return url
 
@@ -281,14 +281,16 @@ def add_check(url_id):
                 "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (?, ?, ?, ?, ?)",
                 (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
             )
+            check_id = cursor.lastrowid
         else:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)",
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s) RETURNING id",
                 (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
             )
+            check_id = cursor.fetchone()[0]
 
         conn.commit()
-        return cursor.lastrowid if is_sqlite else cursor.fetchone()[0]
+        return check_id
     finally:
         cursor.close()
         conn.close()
