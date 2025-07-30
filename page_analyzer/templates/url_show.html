@@ -19,7 +19,7 @@
                     </tr>
                     <tr>
                         <td>Дата создания</td>
-                        <td>{{ url[2].strftime('%Y-%m-%d') }}</td>
+                        <td>{{ url[2].strftime('%Y-%m-%d') if url[2] is not string else url[2][:10] }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -54,7 +54,7 @@
                             <td>{{ check[3] or '-' }}</td>
                             <td>{{ check[4] or '-' }}</td>
                             <td>{{ check[5] or '-' }}</td>
-                            <td>{{ check[6].strftime('%Y-%m-%d') }}</td>
+                            <td>{{ check[6].strftime('%Y-%m-%d') if check[6] is not string else check[6][:10] }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
