@@ -28,15 +28,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["page_analyzer"]
-
-[tool.ruff]
-target-version = "py38"
-line-length = 100
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "B", "C4", "UP", "ARG", "SIM", "TCH", "TID", "Q", "RSE", "RET", "SLF", "SLOT", "PIE", "LOG", "PTH", "EM", "NPY", "AIR", "PERF", "FURB", "TRY", "FLY", "A", "COM", "C90", "DTZ", "ISC", "ICN", "G", "INP", "T20", "PYI", "PT"]
-ignore = ["E501", "F401"]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"] 
+packages = ["page_analyzer"] 

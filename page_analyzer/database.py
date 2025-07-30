@@ -4,13 +4,17 @@ import sqlite3
 
 import psycopg2
 import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# Constants
+MAX_URL_LENGTH = 255
+
 
 def get_connection():
-    """Получение соединения с базой данных"""
+    """Get database connection"""
     database_url = os.getenv("DATABASE_URL")
 
     # Для локальной разработки используем SQLite
@@ -22,7 +26,7 @@ def get_connection():
 
 
 def init_db():
-    """Инициализация базы данных"""
+    """Initialize database"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -79,7 +83,7 @@ def init_db():
 
 
 def normalize_url(url):
-    """Нормализация URL"""
+    """Normalize URL"""
     # Убираем trailing slash
     if url.endswith("/"):
         url = url[:-1]
@@ -87,11 +91,11 @@ def normalize_url(url):
 
 
 def validate_url(url):
-    """Валидация URL"""
+    """Validate URL"""
     if not url:
         return False, "URL обязателен"
 
-    if len(url) > 255:
+    if len(url) > MAX_URL_LENGTH:
         return False, "URL превышает 255 символов"
 
     # Простая валидация URL
@@ -110,16 +114,16 @@ def validate_url(url):
 
 
 def add_url(url):
-    """Добавление URL в базу данных"""
+    """Add URL to database"""
     # Нормализуем URL
     normalized_url = normalize_url(url)
 
     conn = get_connection()
     cursor = conn.cursor()
     try:
+        # Проверяем, существует ли URL
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
-        # Проверяем, существует ли URL
         if is_sqlite:
             cursor.execute("SELECT id FROM urls WHERE name = ?", (normalized_url,))
         else:
@@ -148,22 +152,17 @@ def add_url(url):
 
 
 def get_url_by_id(url_id):
-    """Получение URL по ID"""
+    """Get URL by ID"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE id = ?",
-                (url_id,),
-            )
+            cursor.execute("SELECT * FROM urls WHERE id = ?", (url_id,))
         else:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE id = %s",
-                (url_id,),
-            )
+            cursor.execute("SELECT * FROM urls WHERE id = %s", (url_id,))
+
         return cursor.fetchone()
     finally:
         cursor.close()
@@ -171,43 +170,39 @@ def get_url_by_id(url_id):
 
 
 def get_all_urls():
-    """Получение всех URL с информацией о последней проверке"""
+    """Get all URLs with last check information"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            # SQLite не поддерживает LATERAL JOIN, используем подзапрос
             cursor.execute("""
-                SELECT u.id, u.name, u.created_at,
-                       c.id, c.status_code, c.h1, c.title, c.description, c.created_at
+                SELECT
+                    u.id, u.name, u.created_at,
+                    lc.status_code, lc.created_at as last_check_date
                 FROM urls u
                 LEFT JOIN (
-                    SELECT url_id, id, status_code, h1, title, description, created_at
-                    FROM url_checks c1
-                    WHERE c1.created_at = (
-                        SELECT MAX(c2.created_at)
-                        FROM url_checks c2
-                        WHERE c2.url_id = c1.url_id
-                    )
-                ) c ON c.url_id = u.id
+                    SELECT url_id, status_code, created_at,
+                           ROW_NUMBER() OVER (PARTITION BY url_id ORDER BY created_at DESC) as rn
+                    FROM url_checks
+                ) lc ON u.id = lc.url_id AND lc.rn = 1
                 ORDER BY u.created_at DESC
             """)
         else:
             cursor.execute("""
-                SELECT u.id, u.name, u.created_at,
-                       c.id, c.status_code, c.h1, c.title, c.description, c.created_at
+                SELECT
+                    u.id, u.name, u.created_at,
+                    lc.status_code, lc.created_at as last_check_date
                 FROM urls u
-                LEFT JOIN LATERAL (
-                    SELECT id, status_code, h1, title, description, created_at
+                LEFT JOIN (
+                    SELECT url_id, status_code, created_at,
+                           ROW_NUMBER() OVER (PARTITION BY url_id ORDER BY created_at DESC) as rn
                     FROM url_checks
-                    WHERE url_id = u.id
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                ) c ON true
+                ) lc ON u.id = lc.url_id AND lc.rn = 1
                 ORDER BY u.created_at DESC
             """)
+
         return cursor.fetchall()
     finally:
         cursor.close()
@@ -215,7 +210,7 @@ def get_all_urls():
 
 
 def get_url_by_name(name):
-    """Получение URL по имени"""
+    """Get URL by name"""
     # Нормализуем URL
     normalized_name = normalize_url(name)
 
@@ -225,15 +220,10 @@ def get_url_by_name(name):
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE name = ?",
-                (normalized_name,),
-            )
+            cursor.execute("SELECT * FROM urls WHERE name = ?", (normalized_name,))
         else:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE name = %s",
-                (normalized_name,),
-            )
+            cursor.execute("SELECT * FROM urls WHERE name = %s", (normalized_name,))
+
         return cursor.fetchone()
     finally:
         cursor.close()
@@ -241,109 +231,87 @@ def get_url_by_name(name):
 
 
 def _perform_url_check(url):
-    """Выполнение проверки URL и извлечение данных"""
+    """Perform URL check and extract data"""
     try:
-        # Выполняем HTTP-запрос к сайту
         response = requests.get(url, timeout=10)
         response.raise_for_status()
 
-        # Извлекаем данные из ответа
-        status_code = response.status_code
-        h1 = None
-        title = None
-        description = None
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        # Парсим HTML для извлечения h1, title и description
-        if response.headers.get("content-type", "").startswith("text/html"):
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(response.text, "html.parser")
+        h1 = soup.find("h1")
+        h1_text = h1.get_text().strip() if h1 else ""
 
-            # Извлекаем h1
-            h1_tag = soup.find("h1")
-            if h1_tag:
-                h1 = h1_tag.get_text().strip()
+        title = soup.find("title")
+        title_text = title.get_text().strip() if title else ""
 
-            # Извлекаем title
-            title_tag = soup.find("title")
-            if title_tag:
-                title = title_tag.get_text().strip()
+        description = soup.find("meta", attrs={"name": "description"})
+        description_text = description.get("content", "").strip() if description else ""
 
-            # Извлекаем description
-            meta_desc = soup.find("meta", attrs={"name": "description"})
-            if meta_desc:
-                description = meta_desc.get("content", "").strip()
-
+        return {
+            "status_code": response.status_code,
+            "h1": h1_text,
+            "title": title_text,
+            "description": description_text,
+        }
     except requests.RequestException:
-        # Если произошла ошибка при запросе, возвращаем None
         return None
-    else:
-        return status_code, h1, title, description
 
 
 def add_check(url_id):
-    """Добавление проверки для URL"""
-    # Проверяем, что URL существует
+    """Add URL check to database"""
+    # Получаем URL для проверки
     url_data = get_url_by_id(url_id)
     if not url_data:
         return None
 
-    url = url_data[1]
+    url = url_data[1]  # name field
 
-    # Выполняем проверку URL
-    result = _perform_url_check(url)
-    if result is None:
+    # Выполняем проверку
+    check_data = _perform_url_check(url)
+    if not check_data:
         return None
 
-    status_code, h1, title, description = result
-
-    # Добавляем новую проверку в базу данных
     conn = get_connection()
     cursor = conn.cursor()
     try:
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute("""
-                INSERT INTO url_checks (url_id, status_code, h1, title, description)
-                VALUES (?, ?, ?, ?, ?)
-            """, (url_id, status_code, h1, title, description))
-            check_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (?, ?, ?, ?, ?)",
+                (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
+            )
         else:
-            cursor.execute("""
-                INSERT INTO url_checks (url_id, status_code, h1, title, description)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id
-            """, (url_id, status_code, h1, title, description))
-            check_id = cursor.fetchone()[0]
+            cursor.execute(
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s)",
+                (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
+            )
 
         conn.commit()
-        return check_id
+        return cursor.lastrowid if is_sqlite else cursor.fetchone()[0]
     finally:
         cursor.close()
         conn.close()
 
 
 def get_checks_by_url_id(url_id):
-    """Получение всех проверок для URL"""
+    """Get all checks for URL"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks
-                WHERE url_id = ?
-                ORDER BY created_at DESC
-            """, (url_id,))
+            cursor.execute(
+                "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC",
+                (url_id,),
+            )
         else:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks
-                WHERE url_id = %s
-                ORDER BY created_at DESC
-            """, (url_id,))
+            cursor.execute(
+                "SELECT * FROM url_checks WHERE url_id = %s ORDER BY created_at DESC",
+                (url_id,),
+            )
+
         return cursor.fetchall()
     finally:
         cursor.close()
@@ -351,28 +319,23 @@ def get_checks_by_url_id(url_id):
 
 
 def get_last_check_by_url_id(url_id):
-    """Получение последней проверки для URL"""
+    """Get last check for URL"""
     conn = get_connection()
     cursor = conn.cursor()
     try:
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks
-                WHERE url_id = ?
-                ORDER BY created_at DESC
-                LIMIT 1
-            """, (url_id,))
+            cursor.execute(
+                "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1",
+                (url_id,),
+            )
         else:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks
-                WHERE url_id = %s
-                ORDER BY created_at DESC
-                LIMIT 1
-            """, (url_id,))
+            cursor.execute(
+                "SELECT * FROM url_checks WHERE url_id = %s ORDER BY created_at DESC LIMIT 1",
+                (url_id,),
+            )
+
         return cursor.fetchone()
     finally:
         cursor.close()
