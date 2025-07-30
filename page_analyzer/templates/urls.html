@@ -22,8 +22,8 @@
                         <tr>
                             <td>{{ url[0] }}</td>
                             <td><a href="{{ url_for('url_show', url_id=url[0]) }}">{{ url[1] }}</a></td>
-                            <td>{{ url[8].strftime('%Y-%m-%d') if url[8] and url[8] is not string else (url[8][:10] if url[8] else '-') }}</td>
-                            <td>{{ url[4] if url[4] else '-' }}</td>
+                            <td>{{ url[2].strftime('%Y-%m-%d') if url[2] and url[2] is not string else (url[2][:10] if url[2] else '-') }}</td>
+                            <td>{{ url[3] if url[3] else '-' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
