@@ -43,64 +43,60 @@ def validate_url(url):
 
 def add_url(url):
     """Добавление URL в базу данных"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            # Проверяем, существует ли URL
-            cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
-            existing = cursor.fetchone()
-            if existing:
-                return existing[0]
+    with get_connection() as conn, conn.cursor() as cursor:
+        # Проверяем, существует ли URL
+        cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
+        existing = cursor.fetchone()
+        if existing:
+            return existing[0]
 
-            # Добавляем новый URL
-            cursor.execute(
-                "INSERT INTO urls (name) VALUES (%s) RETURNING id",
-                (url,)
-            )
-            url_id = cursor.fetchone()[0]
-            conn.commit()
-            return url_id
+        # Добавляем новый URL
+        cursor.execute(
+            "INSERT INTO urls (name) VALUES (%s) RETURNING id",
+            (url,),
+        )
+        url_id = cursor.fetchone()[0]
+        conn.commit()
+        return url_id
 
 
 def get_url_by_id(url_id):
     """Получение URL по ID"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE id = %s",
-                (url_id,)
-            )
-            return cursor.fetchone()
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute(
+            "SELECT id, name, created_at FROM urls WHERE id = %s",
+            (url_id,),
+        )
+        return cursor.fetchone()
 
 
 def get_all_urls():
     """Получение всех URL с информацией о последней проверке"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT u.id, u.name, u.created_at, 
-                       c.id, c.status_code, c.h1, c.title, c.description, c.created_at
-                FROM urls u
-                LEFT JOIN LATERAL (
-                    SELECT id, status_code, h1, title, description, created_at
-                    FROM url_checks 
-                    WHERE url_id = u.id 
-                    ORDER BY created_at DESC 
-                    LIMIT 1
-                ) c ON true
-                ORDER BY u.created_at DESC
-            """)
-            return cursor.fetchall()
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT u.id, u.name, u.created_at,
+                   c.id, c.status_code, c.h1, c.title, c.description, c.created_at
+            FROM urls u
+            LEFT JOIN LATERAL (
+                SELECT id, status_code, h1, title, description, created_at
+                FROM url_checks
+                WHERE url_id = u.id
+                ORDER BY created_at DESC
+                LIMIT 1
+            ) c ON true
+            ORDER BY u.created_at DESC
+        """)
+        return cursor.fetchall()
 
 
 def get_url_by_name(name):
     """Получение URL по имени"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT id, name, created_at FROM urls WHERE name = %s",
-                (name,)
-            )
-            return cursor.fetchone()
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute(
+            "SELECT id, name, created_at FROM urls WHERE name = %s",
+            (name,),
+        )
+        return cursor.fetchone()
 
 
 def _perform_url_check(url):
@@ -160,40 +156,37 @@ def add_check(url_id):
     status_code, h1, title, description = result
 
     # Добавляем новую проверку в базу данных
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO url_checks (url_id, status_code, h1, title, description)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id
-            """, (url_id, status_code, h1, title, description))
-            check_id = cursor.fetchone()[0]
-            conn.commit()
-            return check_id
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute("""
+            INSERT INTO url_checks (url_id, status_code, h1, title, description)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (url_id, status_code, h1, title, description))
+        check_id = cursor.fetchone()[0]
+        conn.commit()
+        return check_id
 
 
 def get_checks_by_url_id(url_id):
     """Получение всех проверок для URL"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks 
-                WHERE url_id = %s 
-                ORDER BY created_at DESC
-            """, (url_id,))
-            return cursor.fetchall()
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, url_id, status_code, h1, title, description, created_at
+            FROM url_checks
+            WHERE url_id = %s
+            ORDER BY created_at DESC
+        """, (url_id,))
+        return cursor.fetchall()
 
 
 def get_last_check_by_url_id(url_id):
     """Получение последней проверки для URL"""
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks 
-                WHERE url_id = %s 
-                ORDER BY created_at DESC 
-                LIMIT 1
-            """, (url_id,))
-            return cursor.fetchone()
+    with get_connection() as conn, conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, url_id, status_code, h1, title, description, created_at
+            FROM url_checks
+            WHERE url_id = %s
+            ORDER BY created_at DESC
+            LIMIT 1
+        """, (url_id,))
+        return cursor.fetchone()
