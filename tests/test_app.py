@@ -9,10 +9,10 @@ def client():
     """Create a test client for the Flask application."""
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
-    
+
     # Инициализируем базу данных для тестов
     init_db()
-    
+
     with app.test_client() as client:
         yield client
 

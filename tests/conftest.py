@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 
@@ -12,4 +13,4 @@ def setup_test_env():
     if "DATABASE_URL" in os.environ:
         del os.environ["DATABASE_URL"]
     if "SECRET_KEY" in os.environ:
-        del os.environ["SECRET_KEY"] 
+        del os.environ["SECRET_KEY"]
