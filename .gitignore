@@ -136,4 +136,22 @@ dmypy.json
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ruff cache
+.ruff_cache/
+
+# Python version file (for render.com compatibility)
+.python-version 
