@@ -87,9 +87,6 @@ def normalize_url(url):
     # Убираем все trailing slashes
     while url.endswith("/"):
         url = url[:-1]
-    # Убираем trailing slash после домена, но оставляем путь
-    if url.endswith("/"):
-        url = url[:-1]
     return url
 
 
