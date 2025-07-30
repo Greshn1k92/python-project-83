@@ -1,4 +1,4 @@
-.PHONY: install dev start build render-start test lint
+.PHONY: install dev start build render-start
 
 PORT ?= 8000
 
@@ -15,10 +15,4 @@ build:
 	./build.sh
 
 render-start:
-	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app
-
-test:
-	uv run pytest
-
-lint:
-	uv run ruff check . 
+	gunicorn -w 5 -b 0.0.0.0:$(PORT) page_analyzer:app 
