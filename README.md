@@ -1,7 +1,7 @@
 # Анализатор страниц
 
 [![Hexlet-check](https://github.com/Greshn1k92/python-project-83/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/Greshn1k92/python-project-83/actions/workflows/hexlet-check.yml)
-[![Maintainability](https://api.codeclimate.com/v1/badges/a1a2b38b7f3a/maintainability)](https://codeclimate.com/github/Greshn1k92/python-project-83)
+[![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=Greshn1k92_python-project-83&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Greshn1k92_python-project-83)
 
 Веб-приложение для анализа веб-страниц на SEO пригодность.
 
