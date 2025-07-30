@@ -10,6 +10,7 @@ from .database import (
     get_checks_by_url_id,
     get_url_by_id,
     get_url_by_name,
+    init_db,
     validate_url,
 )
 
@@ -17,6 +18,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
+
+# Инициализируем базу данных при запуске
+init_db()
 
 
 @app.route("/")
