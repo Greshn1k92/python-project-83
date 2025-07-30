@@ -1,7 +1,15 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 try:
     from .database import (
@@ -31,9 +39,6 @@ load_dotenv()
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
 
-# Инициализируем базу данных при запуске
-# init_db()
-
 
 @app.route("/")
 def index():
@@ -45,28 +50,25 @@ def urls():
     if request.method == "POST":
         url = request.form.get("url")
 
-        # Валидация URL
         is_valid, error_message = validate_url(url)
         if not is_valid:
             flash(error_message, "error")
             return render_template("index.html", url=url), 422
 
-        # Проверяем, существует ли URL уже в базе
         existing_url = get_url_by_name(url)
         if existing_url:
             flash("Страница уже существует", "info")
             return redirect(url_for("url_show", url_id=existing_url[0]))
 
-        # Добавляем новый URL
         try:
             url_id = add_url(url)
             flash("Страница успешно добавлена", "success")
             return redirect(url_for("url_show", url_id=url_id))
-        except Exception:
+        except Exception as e:
+            app.logger.error(f"Error adding URL: {str(e)}")
             flash("Произошла ошибка при добавлении URL", "error")
             return render_template("index.html", url=url), 422
 
-    # GET запрос - показываем список всех URL
     urls_list = get_all_urls()
     return render_template("urls.html", urls=urls_list)
 
@@ -87,10 +89,14 @@ def url_checks(url_id):
     if not url_data:
         abort(404)
 
-    check_id = add_check(url_id)
-    if check_id:
-        flash("Страница успешно проверена", "success")
-    else:
+    try:
+        check_id = add_check(url_id)
+        if check_id:
+            flash("Страница успешно проверена", "success")
+        else:
+            flash("Произошла ошибка при проверке", "error")
+    except Exception as e:
+        app.logger.error(f"Error adding check: {str(e)}")
         flash("Произошла ошибка при проверке", "error")
 
     return redirect(url_for("url_show", url_id=url_id))
