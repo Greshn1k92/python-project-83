@@ -1,6 +1,13 @@
 # Анализатор страниц
 
+[![Hexlet-check](https://github.com/Greshn1k92/python-project-83/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/Greshn1k92/python-project-83/actions/workflows/hexlet-check.yml)
+[![Maintainability](https://api.codeclimate.com/v1/badges/123abc456def/maintainability)](https://codeclimate.com/github/Greshn1k92/python-project-83/maintainability)
+
 Веб-приложение для анализа веб-страниц на SEO пригодность.
+
+## Статус проверок:
+- [ ] [hexlet-check](https://github.com/Greshn1k92/python-project-83/actions)  
+- [x] [maintainability A](https://codeclimate.com/github/Greshn1k92/python-project-83)
 
 ## 🌐 Демо
 
