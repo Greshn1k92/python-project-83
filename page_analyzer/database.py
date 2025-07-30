@@ -112,11 +112,11 @@ def _perform_url_check(url):
             if meta_desc:
                 description = meta_desc.get("content", "").strip()
 
-        return status_code, h1, title, description
-
     except requests.RequestException:
         # Если произошла ошибка при запросе, возвращаем None
         return None
+    else:
+        return status_code, h1, title, description
 
 
 def add_check(url_id):
