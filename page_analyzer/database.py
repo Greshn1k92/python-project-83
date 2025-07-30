@@ -298,7 +298,8 @@ def add_check(url_id):
 
         if is_sqlite:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, status_code, h1, title, description) "
+                "INSERT INTO url_checks"
+                "(url_id, status_code, h1, title, description) "
                 "VALUES (?, ?, ?, ?, ?)",
                 (
                     url_id, check_data["status_code"], check_data["h1"],
@@ -308,7 +309,8 @@ def add_check(url_id):
             check_id = cursor.lastrowid
         else:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, status_code, h1, title, description) "
+                "INSERT INTO url_checks"
+                "(url_id, status_code, h1, title, description) "
                 "VALUES (%s, %s, %s, %s, %s) RETURNING id",
                 (
                     url_id, check_data["status_code"], check_data["h1"],
