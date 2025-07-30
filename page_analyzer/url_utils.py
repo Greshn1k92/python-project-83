@@ -36,4 +36,4 @@ def validate_url(url):
     if not url_pattern.match(url):
         return False, "Некорректный URL"
 
-    return True, "" 
+    return True, ""

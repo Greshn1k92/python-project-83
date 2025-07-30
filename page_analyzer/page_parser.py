@@ -28,4 +28,4 @@ def parse_page(url):
             "description": description_text,
         }
     except requests.RequestException:
-        return None 
+        return None
