@@ -86,7 +86,9 @@ def init_db():
 def normalize_url(url):
     """Normalize URL to scheme + netloc (ignore path, params, query, fragment)"""
     parsed = urlparse(url)
-    normalized = urlunparse((parsed.scheme, parsed.netloc, '', '', '', ''))
+    normalized = urlunparse((
+        parsed.scheme, parsed.netloc, '', '', '', ''
+    ))
     return normalized
 
 
@@ -125,9 +127,13 @@ def add_url(url):
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute("SELECT id FROM urls WHERE name = ?", (normalized_url,))
+            cursor.execute(
+                "SELECT id FROM urls WHERE name = ?", (normalized_url,)
+            )
         else:
-            cursor.execute("SELECT id FROM urls WHERE name = %s", (normalized_url,))
+            cursor.execute(
+                "SELECT id FROM urls WHERE name = %s", (normalized_url,)
+            )
 
         existing = cursor.fetchone()
         if existing:
@@ -135,7 +141,9 @@ def add_url(url):
 
         # Добавляем новый URL
         if is_sqlite:
-            cursor.execute("INSERT INTO urls (name) VALUES (?)", (normalized_url,))
+            cursor.execute(
+                "INSERT INTO urls (name) VALUES (?)", (normalized_url,)
+            )
             url_id = cursor.lastrowid
         else:
             cursor.execute(
@@ -184,7 +192,9 @@ def get_all_urls():
                 FROM urls u
                 LEFT JOIN (
                     SELECT url_id, status_code, created_at,
-                           ROW_NUMBER() OVER (PARTITION BY url_id ORDER BY created_at DESC) as rn
+                           ROW_NUMBER() OVER (
+                               PARTITION BY url_id ORDER BY created_at DESC
+                           ) as rn
                     FROM url_checks
                 ) lc ON u.id = lc.url_id AND lc.rn = 1
                 ORDER BY u.created_at DESC
@@ -197,7 +207,9 @@ def get_all_urls():
                 FROM urls u
                 LEFT JOIN (
                     SELECT url_id, status_code, created_at,
-                           ROW_NUMBER() OVER (PARTITION BY url_id ORDER BY created_at DESC) as rn
+                           ROW_NUMBER() OVER (
+                               PARTITION BY url_id ORDER BY created_at DESC
+                           ) as rn
                     FROM url_checks
                 ) lc ON u.id = lc.url_id AND lc.rn = 1
                 ORDER BY u.created_at DESC
@@ -220,9 +232,13 @@ def get_url_by_name(name):
         is_sqlite = isinstance(conn, sqlite3.Connection)
 
         if is_sqlite:
-            cursor.execute("SELECT * FROM urls WHERE name = ?", (normalized_name,))
+            cursor.execute(
+                "SELECT * FROM urls WHERE name = ?", (normalized_name,)
+            )
         else:
-            cursor.execute("SELECT * FROM urls WHERE name = %s", (normalized_name,))
+            cursor.execute(
+                "SELECT * FROM urls WHERE name = %s", (normalized_name,)
+            )
 
         return cursor.fetchone()
     finally:
@@ -245,7 +261,9 @@ def _perform_url_check(url):
         title_text = title.get_text().strip() if title else ""
 
         description = soup.find("meta", attrs={"name": "description"})
-        description_text = description.get("content", "").strip() if description else ""
+        description_text = (
+            description.get("content", "").strip() if description else ""
+        )
 
         return {
             "status_code": response.status_code,
@@ -278,14 +296,22 @@ def add_check(url_id):
 
         if is_sqlite:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (?, ?, ?, ?, ?)",
-                (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    url_id, check_data["status_code"], check_data["h1"],
+                    check_data["title"], check_data["description"]
+                ),
             )
             check_id = cursor.lastrowid
         else:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-                (url_id, check_data["status_code"], check_data["h1"], check_data["title"], check_data["description"]),
+                "INSERT INTO url_checks (url_id, status_code, h1, title, description) "
+                "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                (
+                    url_id, check_data["status_code"], check_data["h1"],
+                    check_data["title"], check_data["description"]
+                ),
             )
             check_id = cursor.fetchone()[0]
 
@@ -305,12 +331,14 @@ def get_checks_by_url_id(url_id):
 
         if is_sqlite:
             cursor.execute(
-                "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC",
+                "SELECT * FROM url_checks WHERE url_id = ? "
+                "ORDER BY created_at DESC",
                 (url_id,),
             )
         else:
             cursor.execute(
-                "SELECT * FROM url_checks WHERE url_id = %s ORDER BY created_at DESC",
+                "SELECT * FROM url_checks WHERE url_id = %s "
+                "ORDER BY created_at DESC",
                 (url_id,),
             )
 
@@ -329,12 +357,14 @@ def get_last_check_by_url_id(url_id):
 
         if is_sqlite:
             cursor.execute(
-                "SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1",
+                "SELECT * FROM url_checks WHERE url_id = ? "
+                "ORDER BY created_at DESC LIMIT 1",
                 (url_id,),
             )
         else:
             cursor.execute(
-                "SELECT * FROM url_checks WHERE url_id = %s ORDER BY created_at DESC LIMIT 1",
+                "SELECT * FROM url_checks WHERE url_id = %s "
+                "ORDER BY created_at DESC LIMIT 1",
                 (url_id,),
             )
 
