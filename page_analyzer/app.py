@@ -20,8 +20,8 @@ try:
         get_url_by_id,
         get_url_by_name,
         init_db,
-        validate_url,
     )
+    from .url_utils import validate_url
 except ImportError:
     from database import (
         add_check,
@@ -31,8 +31,8 @@ except ImportError:
         get_url_by_id,
         get_url_by_name,
         init_db,
-        validate_url,
     )
+    from url_utils import validate_url
 
 load_dotenv()
 

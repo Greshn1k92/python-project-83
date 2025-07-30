@@ -1,17 +1,13 @@
 import os
-import re
 import sqlite3
-from urllib.parse import urlparse, urlunparse
 
 import psycopg2
-import requests
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-load_dotenv()
+from .page_parser import parse_page
+from .url_utils import normalize_url
 
-# Constants
-MAX_URL_LENGTH = 255
+load_dotenv()
 
 
 def get_connection():
@@ -81,40 +77,6 @@ def init_db():
     finally:
         cursor.close()
         conn.close()
-
-
-def normalize_url(url):
-    """Normalize URL to scheme + netloc
-    (ignore path, params, query, fragment)
-    """
-    parsed = urlparse(url)
-    normalized = urlunparse((
-        parsed.scheme, parsed.netloc, '', '', '', ''
-    ))
-    return normalized
-
-
-def validate_url(url):
-    """Validate URL"""
-    if not url:
-        return False, "URL обязателен"
-
-    if len(url) > MAX_URL_LENGTH:
-        return False, "URL превышает 255 символов"
-
-    # Простая валидация URL
-    url_pattern = re.compile(
-        r"^https?://"  # http:// или https://
-        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # домен
-        r"localhost|"  # localhost
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # IP
-        r"(?::\d+)?"  # порт
-        r"(?:/?|[/?]\S+)$", re.IGNORECASE)
-
-    if not url_pattern.match(url):
-        return False, "Некорректный URL"
-
-    return True, ""
 
 
 def add_url(url):
@@ -248,35 +210,6 @@ def get_url_by_name(name):
         conn.close()
 
 
-def _perform_url_check(url):
-    """Perform URL check and extract data"""
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        h1 = soup.find("h1")
-        h1_text = h1.get_text().strip() if h1 else ""
-
-        title = soup.find("title")
-        title_text = title.get_text().strip() if title else ""
-
-        description = soup.find("meta", attrs={"name": "description"})
-        description_text = (
-            description.get("content", "").strip() if description else ""
-        )
-
-        return {
-            "status_code": response.status_code,
-            "h1": h1_text,
-            "title": title_text,
-            "description": description_text,
-        }
-    except requests.RequestException:
-        return None
-
-
 def add_check(url_id):
     """Add URL check to database"""
     # Получаем URL для проверки
@@ -287,7 +220,7 @@ def add_check(url_id):
     url = url_data[1]  # name field
 
     # Выполняем проверку
-    check_data = _perform_url_check(url)
+    check_data = parse_page(url)
     if not check_data:
         return None
 
