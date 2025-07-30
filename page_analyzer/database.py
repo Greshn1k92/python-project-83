@@ -1,6 +1,5 @@
 import os
 import re
-from datetime import datetime, timezone
 
 import psycopg2
 import requests
