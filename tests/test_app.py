@@ -1,4 +1,5 @@
 import pytest
+
 from page_analyzer.app import app
 
 
@@ -34,4 +35,4 @@ def test_url_checks_page(client):
     """Test that the URL checks page loads successfully."""
     # This test will fail if no URLs exist, but that's expected
     response = client.post("/urls/1/checks")
-    assert response.status_code in [302, 404] 
+    assert response.status_code in [302, 404]
