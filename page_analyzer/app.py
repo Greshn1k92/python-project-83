@@ -3,16 +3,28 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
-from .database import (
-    add_check,
-    add_url,
-    get_all_urls,
-    get_checks_by_url_id,
-    get_url_by_id,
-    get_url_by_name,
-    init_db,
-    validate_url,
-)
+try:
+    from .database import (
+        add_check,
+        add_url,
+        get_all_urls,
+        get_checks_by_url_id,
+        get_url_by_id,
+        get_url_by_name,
+        init_db,
+        validate_url,
+    )
+except ImportError:
+    from database import (
+        add_check,
+        add_url,
+        get_all_urls,
+        get_checks_by_url_id,
+        get_url_by_id,
+        get_url_by_name,
+        init_db,
+        validate_url,
+    )
 
 load_dotenv()
 
@@ -20,7 +32,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
 
 # Инициализируем базу данных при запуске
-init_db()
+# init_db()
 
 
 @app.route("/")
@@ -85,4 +97,5 @@ def url_checks(url_id):
 
 
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True)
