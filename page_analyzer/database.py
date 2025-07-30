@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime, timezone
 
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -78,20 +79,69 @@ def get_url_by_name(name):
     return None
 
 
+def _perform_url_check(url):
+    """Выполнение проверки URL и извлечение данных"""
+    try:
+        # Выполняем HTTP-запрос к сайту
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        # Извлекаем данные из ответа
+        status_code = response.status_code
+        h1 = None
+        title = None
+        description = None
+
+        # Парсим HTML для извлечения h1, title и description
+        if response.headers.get("content-type", "").startswith("text/html"):
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # Извлекаем h1
+            h1_tag = soup.find("h1")
+            if h1_tag:
+                h1 = h1_tag.get_text().strip()
+
+            # Извлекаем title
+            title_tag = soup.find("title")
+            if title_tag:
+                title = title_tag.get_text().strip()
+
+            # Извлекаем description
+            meta_desc = soup.find("meta", attrs={"name": "description"})
+            if meta_desc:
+                description = meta_desc.get("content", "").strip()
+
+        return status_code, h1, title, description
+
+    except requests.RequestException:
+        # Если произошла ошибка при запросе, возвращаем None
+        return None
+
+
 def add_check(url_id):
     """Добавление проверки для URL"""
     global _next_check_id
 
     # Проверяем, что URL существует
-    url_exists = any(url_data[0] == url_id for url_data in _urls_storage)
-    if not url_exists:
+    url_data = get_url_by_id(url_id)
+    if not url_data:
         return None
+
+    url = url_data[1]
+
+    # Выполняем проверку URL
+    result = _perform_url_check(url)
+    if result is None:
+        return None
+
+    status_code, h1, title, description = result
 
     # Добавляем новую проверку
     check_id = _next_check_id
     _next_check_id += 1
 
-    check_data = (check_id, url_id, None, None, None, None, datetime.now(timezone.utc))
+    check_data = (check_id, url_id, status_code, h1, title, description, datetime.now(timezone.utc))
     _checks_storage.append(check_data)
     return check_id
 
