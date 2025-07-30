@@ -13,7 +13,8 @@ def init_db():
 
     if not database_url:
         # If DATABASE_URL is not set, use default values for Docker
-        database_url = "postgresql://postgres:postgres@db:5432/postgres"
+        # Hexlet uses different password in Docker environment
+        database_url = "postgresql://postgres:password@db:5432/postgres"
 
     # Connect to database
     conn = psycopg2.connect(database_url)
