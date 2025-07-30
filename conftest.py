@@ -1,27 +1,26 @@
 import os
-
-import psycopg2
 import pytest
+import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 
 @pytest.fixture(autouse=True)
 def init_db():
-    """Инициализация базы данных для тестов"""
-    # Получаем DATABASE_URL из переменных окружения
+    """Initialize database for tests"""
+    # Get DATABASE_URL from environment variables
     database_url = os.getenv("DATABASE_URL")
-
+    
     if not database_url:
-        # Если DATABASE_URL не задан, используем значения по умолчанию для Docker
+        # If DATABASE_URL is not set, use default values for Docker
         database_url = "postgresql://postgres:postgres@db:5432/postgres"
-
-    # Подключаемся к базе данных
+    
+    # Connect to database
     conn = psycopg2.connect(database_url)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
-
+    
     try:
-        # Создаем таблицы если их нет
+        # Create tables if they don't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS urls (
                 id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -29,7 +28,7 @@ def init_db():
                 created_at timestamp DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
+        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS url_checks (
                 id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -41,22 +40,22 @@ def init_db():
                 created_at timestamp DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Очищаем таблицы перед каждым тестом
+        
+        # Clear tables before each test
         cursor.execute("DELETE FROM url_checks")
         cursor.execute("DELETE FROM urls")
-
+        
     finally:
         cursor.close()
         conn.close()
-
+    
     yield
-
-    # Очистка после теста
+    
+    # Cleanup after test
     conn = psycopg2.connect(database_url)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
-
+    
     try:
         cursor.execute("DELETE FROM url_checks")
         cursor.execute("DELETE FROM urls")
