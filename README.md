@@ -5,10 +5,6 @@
 
 Веб-приложение для анализа веб-страниц на SEO пригодность.
 
-## Статус проверок:
-- [ ] [hexlet-check](https://github.com/Greshn1k92/python-project-83/actions)  
-- [x] [maintainability A](https://codeclimate.com/github/Greshn1k92/python-project-83)
-
 ## 🌐 Демо
 
 Приложение доступно по адресу: [https://python-project-83.onrender.com](https://python-project-83.onrender.com)
