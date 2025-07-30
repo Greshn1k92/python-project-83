@@ -55,13 +55,13 @@ def urls():
         existing_url = get_url_by_name(url)
         if existing_url:
             flash("Страница уже существует", "info")
-            return redirect(url_for("url_show", id=existing_url[0]))
+            return redirect(url_for("url_show", url_id=existing_url[0]))
 
         # Добавляем новый URL
         try:
             url_id = add_url(url)
             flash("Страница успешно добавлена", "success")
-            return redirect(url_for("url_show", id=url_id))
+            return redirect(url_for("url_show", url_id=url_id))
         except Exception:
             flash("Произошла ошибка при добавлении URL", "error")
             return render_template("index.html", url=url), 422

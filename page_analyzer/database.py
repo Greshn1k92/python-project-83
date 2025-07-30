@@ -78,6 +78,14 @@ def init_db():
         conn.close()
 
 
+def normalize_url(url):
+    """Нормализация URL"""
+    # Убираем trailing slash
+    if url.endswith("/"):
+        url = url[:-1]
+    return url
+
+
 def validate_url(url):
     """Валидация URL"""
     if not url:
@@ -103,6 +111,9 @@ def validate_url(url):
 
 def add_url(url):
     """Добавление URL в базу данных"""
+    # Нормализуем URL
+    normalized_url = normalize_url(url)
+
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -110,9 +121,9 @@ def add_url(url):
 
         # Проверяем, существует ли URL
         if is_sqlite:
-            cursor.execute("SELECT id FROM urls WHERE name = ?", (url,))
+            cursor.execute("SELECT id FROM urls WHERE name = ?", (normalized_url,))
         else:
-            cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
+            cursor.execute("SELECT id FROM urls WHERE name = %s", (normalized_url,))
 
         existing = cursor.fetchone()
         if existing:
@@ -120,12 +131,12 @@ def add_url(url):
 
         # Добавляем новый URL
         if is_sqlite:
-            cursor.execute("INSERT INTO urls (name) VALUES (?)", (url,))
+            cursor.execute("INSERT INTO urls (name) VALUES (?)", (normalized_url,))
             url_id = cursor.lastrowid
         else:
             cursor.execute(
                 "INSERT INTO urls (name) VALUES (%s) RETURNING id",
-                (url,),
+                (normalized_url,),
             )
             url_id = cursor.fetchone()[0]
 
@@ -205,6 +216,9 @@ def get_all_urls():
 
 def get_url_by_name(name):
     """Получение URL по имени"""
+    # Нормализуем URL
+    normalized_name = normalize_url(name)
+
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -213,12 +227,12 @@ def get_url_by_name(name):
         if is_sqlite:
             cursor.execute(
                 "SELECT id, name, created_at FROM urls WHERE name = ?",
-                (name,),
+                (normalized_name,),
             )
         else:
             cursor.execute(
                 "SELECT id, name, created_at FROM urls WHERE name = %s",
-                (name,),
+                (normalized_name,),
             )
         return cursor.fetchone()
     finally:
