@@ -2,16 +2,21 @@ import os
 import re
 from datetime import datetime, timezone
 
+import psycopg2
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Временное хранилище для демонстрации (в продакшене будет PostgreSQL)
-_urls_storage = []
-_checks_storage = []
-_next_id = 1
-_next_check_id = 1
+
+def get_connection():
+    """Получение соединения с базой данных"""
+    return psycopg2.connect(
+        host=os.getenv("DATABASE_URL", "localhost"),
+        database=os.getenv("DB_NAME", "page_analyzer"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", "postgres"),
+    )
 
 
 def validate_url(url):
@@ -39,44 +44,64 @@ def validate_url(url):
 
 def add_url(url):
     """Добавление URL в базу данных"""
-    global _next_id
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            # Проверяем, существует ли URL
+            cursor.execute("SELECT id FROM urls WHERE name = %s", (url,))
+            existing = cursor.fetchone()
+            if existing:
+                return existing[0]
 
-    # Проверяем, существует ли URL
-    for existing_url in _urls_storage:
-        if existing_url[1] == url:
-            return existing_url[0]
-
-    # Добавляем новый URL
-    url_id = _next_id
-    _next_id += 1
-
-    _urls_storage.append((url_id, url, datetime.now(timezone.utc)))
-    return url_id
+            # Добавляем новый URL
+            cursor.execute(
+                "INSERT INTO urls (name) VALUES (%s) RETURNING id",
+                (url,)
+            )
+            url_id = cursor.fetchone()[0]
+            conn.commit()
+            return url_id
 
 
 def get_url_by_id(url_id):
     """Получение URL по ID"""
-    for url_data in _urls_storage:
-        if url_data[0] == url_id:
-            return url_data
-    return None
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, name, created_at FROM urls WHERE id = %s",
+                (url_id,)
+            )
+            return cursor.fetchone()
 
 
 def get_all_urls():
     """Получение всех URL с информацией о последней проверке"""
-    urls_with_checks = []
-    for url_data in _urls_storage:
-        last_check = get_last_check_by_url_id(url_data[0])
-        urls_with_checks.append((url_data[0], url_data[1], url_data[2], last_check))
-    return sorted(urls_with_checks, key=lambda x: x[2], reverse=True)
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT u.id, u.name, u.created_at, 
+                       c.id, c.status_code, c.h1, c.title, c.description, c.created_at
+                FROM urls u
+                LEFT JOIN LATERAL (
+                    SELECT id, status_code, h1, title, description, created_at
+                    FROM url_checks 
+                    WHERE url_id = u.id 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ) c ON true
+                ORDER BY u.created_at DESC
+            """)
+            return cursor.fetchall()
 
 
 def get_url_by_name(name):
     """Получение URL по имени"""
-    for url_data in _urls_storage:
-        if url_data[1] == name:
-            return url_data
-    return None
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, name, created_at FROM urls WHERE name = %s",
+                (name,)
+            )
+            return cursor.fetchone()
 
 
 def _perform_url_check(url):
@@ -121,8 +146,6 @@ def _perform_url_check(url):
 
 def add_check(url_id):
     """Добавление проверки для URL"""
-    global _next_check_id
-
     # Проверяем, что URL существует
     url_data = get_url_by_id(url_id)
     if not url_data:
@@ -137,22 +160,41 @@ def add_check(url_id):
 
     status_code, h1, title, description = result
 
-    # Добавляем новую проверку
-    check_id = _next_check_id
-    _next_check_id += 1
-
-    check_data = (check_id, url_id, status_code, h1, title, description, datetime.now(timezone.utc))
-    _checks_storage.append(check_data)
-    return check_id
+    # Добавляем новую проверку в базу данных
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO url_checks (url_id, status_code, h1, title, description)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            """, (url_id, status_code, h1, title, description))
+            check_id = cursor.fetchone()[0]
+            conn.commit()
+            return check_id
 
 
 def get_checks_by_url_id(url_id):
     """Получение всех проверок для URL"""
-    checks = [check_data for check_data in _checks_storage if check_data[1] == url_id]
-    return sorted(checks, key=lambda x: x[6], reverse=True)  # Сортировка по дате создания
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, url_id, status_code, h1, title, description, created_at
+                FROM url_checks 
+                WHERE url_id = %s 
+                ORDER BY created_at DESC
+            """, (url_id,))
+            return cursor.fetchall()
 
 
 def get_last_check_by_url_id(url_id):
     """Получение последней проверки для URL"""
-    checks = get_checks_by_url_id(url_id)
-    return checks[0] if checks else None
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, url_id, status_code, h1, title, description, created_at
+                FROM url_checks 
+                WHERE url_id = %s 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            """, (url_id,))
+            return cursor.fetchone()
